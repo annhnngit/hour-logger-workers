@@ -1,30 +1,32 @@
 # hour-logger-workers
 
-Standalone Cloudflare Worker that handles `GET /api/log` and `POST /api/log` for the Hour Logger app.
+Cloudflare Worker API for the Hour Logger app. Handles `GET /api/log` and `POST /api/log`, authenticates with a Google service account, and reads/writes a Google Sheet.
 
-Deploy this if you prefer a pure Worker (with a `*.workers.dev` URL) instead of using the Pages Function bundled with the frontend.
+The frontend (`hour-logger` repo) calls this Worker via the `VITE_API_URL` environment variable set in Cloudflare Pages.
 
-## Setup
+## Secrets
 
-### Secrets
+Add these in the Cloudflare dashboard under **Workers → your worker → Settings → Variables**, or via CLI:
 
 ```bash
 npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_JSON
 # paste the full contents of your service account JSON key
 
 npx wrangler secret put SPREADSHEET_ID
-# paste your Google Sheet ID
+# paste your Google Sheet ID (from the sheet URL)
+
+npx wrangler secret put ALLOWED_ORIGIN
+# paste your Pages URL, e.g. https://hour-logger.pages.dev
 ```
 
-Or add them in the Cloudflare dashboard under **Workers → your worker → Settings → Variables**.
+## Local dev
 
-### Local dev
-
-Create `.dev.vars` (never commit):
+Create `.dev.vars` (never commit this file):
 
 ```ini
 GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 SPREADSHEET_ID=your_spreadsheet_id
+ALLOWED_ORIGIN=http://localhost:5173
 ```
 
 Then:
@@ -34,11 +36,13 @@ npm install
 npm run dev
 ```
 
-### Deploy
+## Deploy
 
 ```bash
 npm run deploy
 ```
+
+After deploying, copy the Worker URL (e.g. `https://hour-logger-workers.your-subdomain.workers.dev`) and set it as `VITE_API_URL` in the **hour-logger Pages** environment variables.
 
 ## Endpoints
 
@@ -46,7 +50,3 @@ npm run deploy
 |--------|------|-------------|
 | GET | `/api/log` | Returns last 10 rows (newest first) as `{ rows: [[...], ...] }` |
 | POST | `/api/log` | Appends a row. Body: `{ date, start, finish, duration, client, note }` |
-
-## Note
-
-If using Cloudflare Pages for the frontend, you do **not** need this Worker — the `functions/api/log.js` in the Pages repo handles the same logic as a Pages Function. Use this repo only if you want to run the API as a standalone Worker.

@@ -70,9 +70,9 @@ async function getAccessToken(serviceAccountJson) {
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
 
-function corsHeaders() {
+function corsHeaders(origin) {
   return {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
@@ -83,9 +83,10 @@ function corsHeaders() {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const allowedOrigin = env.ALLOWED_ORIGIN || "*";
 
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders() });
+      return new Response(null, { status: 204, headers: corsHeaders(allowedOrigin) });
     }
 
     if (url.pathname !== "/api/log") {
@@ -115,7 +116,7 @@ export default {
         const dataRows = allRows.slice(1);
         const recent = dataRows.slice(-10).reverse();
 
-        return Response.json({ rows: recent }, { headers: corsHeaders() });
+        return Response.json({ rows: recent }, { headers: corsHeaders(allowedOrigin) });
       }
 
       if (request.method === "POST") {
@@ -146,7 +147,7 @@ export default {
           return new Response(`Sheets append error: ${msg}`, { status: 502 });
         }
 
-        return Response.json({ ok: true }, { headers: corsHeaders() });
+        return Response.json({ ok: true }, { headers: corsHeaders(allowedOrigin) });
       }
 
       return new Response("Method not allowed", { status: 405 });
